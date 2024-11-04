@@ -1,0 +1,36 @@
+{
+  "name": "@color-theory/cnn-ocr",
+  "version": "1.0.0",
+  "description": "OCR upgrade to use CNN",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc && npm run copy-data",
+    "generate-images": "npm run build && node ./dist/scripts/generateImages.js",
+    "copy-data": "copyfiles -u 1 src/data/**/* dist/ && copyfiles -u 1 src/fonts/* dist/",
+    "ocr": "npm run build && node ./dist/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/color-theory/cnn-ocr.git"
+  },
+  "keywords": [
+    "OCR",
+    "test",
+    "machine",
+    "learning"
+  ],
+  "author": "color-theory",
+  "license": "JSON",
+  "bugs": {
+    "url": "https://github.com/color-theory/cnn-ocr/issues"
+  },
+  "homepage": "https://github.com/color-theory/cnn-ocr#readme",
+  "dependencies": {
+    "canvas": "^2.11.2",
+    "copyfiles": "^2.4.1",
+    "typescript": "^5.6.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.6"
+  }
+}
