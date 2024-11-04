@@ -65,7 +65,7 @@ console.log('Fonts registered. Generating reference vectors...');
       }
       const characterPath = path.resolve(characterDir, `${sanitizedCharacter}_${fontIndex}.png`);
       await writeImageFile(canvas, characterPath);
-      fs.appendFileSync( path.resolve(__dirname, "../data/labels.csv"),`${character},${path.resolve(characterDir, `${sanitizedCharacter}_${fontIndex}.png\n`)}`);
+      fs.appendFileSync( path.resolve(__dirname, "../data/labels.csv"),`${character}\t${path.resolve(characterDir, `${sanitizedCharacter}_${fontIndex}.png\n`)}`);
       console.log(`Character ${character} saved as ${characterPath}`);
     };
   };
