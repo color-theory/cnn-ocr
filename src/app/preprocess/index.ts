@@ -1,4 +1,7 @@
 import { createCanvas, Image, Canvas, CanvasRenderingContext2D } from 'canvas';
+import { binarize } from './otsu';
+import { vectorSize } from '../config';
+import * as fs from 'fs';
 
 export const createAndLoadCanvas = (image: Image) => {
 	const canvas = createCanvas(image.width, image.height);
@@ -52,31 +55,51 @@ export const convertToGreyscale = (canvas: Canvas, ctx: CanvasRenderingContext2D
 	ctx.putImageData(imageData, 0, 0);
 }
 
-export const scaleImage = (canvas: Canvas, ctx: CanvasRenderingContext2D, maxWidth: number, maxHeight: number) => {
-	const originalWidth = canvas.width;
-	const originalHeight = canvas.height;
-	const aspectRatio = originalWidth / originalHeight;
+export const scaleImage = (canvas: Canvas, ctx: CanvasRenderingContext2D) => {
+    const originalWidth = canvas.width;
+    const originalHeight = canvas.height;
+    const aspectRatio = originalWidth / originalHeight;
 
-	let width = maxWidth;
-	let height = maxWidth / aspectRatio;
-	if (height > maxHeight) {
-		height = maxHeight;
-		width = maxHeight * aspectRatio;
-	}
+	let width = vectorSize;
+    let height = vectorSize / aspectRatio;
+    if (height > vectorSize) {
+        height = vectorSize;
+        width = vectorSize * aspectRatio;
+    }
 
-	const tempCanvas = createCanvas(width, height);
-	const tempCtx = tempCanvas.getContext('2d');
-	tempCtx.drawImage(canvas, 0, 0, width, height);
+    const tempCanvas = createCanvas(width, height);
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCtx.drawImage(canvas, 0, 0, width, height);
 
-	canvas.width = maxWidth;
-	canvas.height = maxHeight;
+    canvas.width = vectorSize;
+    canvas.height = vectorSize;
 	ctx.fillStyle = 'white';
-	ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 	ctx.fillRect(0, 0, canvas.width, canvas.height);
-	ctx.drawImage(tempCanvas, 0, 0);
-};
 
-export const cropToBoundingBox = (canvas: Canvas, ctx: CanvasRenderingContext2D, minY: number, maxY: number) => {
+	const x = (vectorSize - width) / 2;
+	ctx.drawImage(tempCanvas, x, 0);
+};
+export const centerImageToVectorSize = (canvas: Canvas, ctx: CanvasRenderingContext2D) => {
+	const originalWidth = canvas.width;
+	let newWidth = vectorSize;
+	let newHeight = vectorSize;
+
+	const tempCanvas = createCanvas(newWidth, newHeight);
+	const tempCtx = tempCanvas.getContext('2d');
+	tempCtx.fillStyle = 'white';
+	tempCtx.fillRect(0, 0, newWidth, newHeight);
+	const x = (newWidth - originalWidth) / 2;
+	const y = (newHeight - canvas.height) / 2;
+	tempCtx.drawImage(canvas, x, y);
+	canvas.width = newWidth;
+	canvas.height = newHeight;
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	ctx.drawImage(tempCanvas, 0, 0);
+}
+
+
+export const cropToBoundingBox = (canvas: Canvas, ctx: CanvasRenderingContext2D, minY: number, maxY: number ) => {
 	const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 	const data = imageData.data;
 	let minX = canvas.width;
@@ -92,8 +115,8 @@ export const cropToBoundingBox = (canvas: Canvas, ctx: CanvasRenderingContext2D,
 		}
 	}
 
-	const width = Math.abs(maxX - minX + 1) + 2;
-	const height = Math.abs(maxY - minY + 1) + 2;
+	const width = Math.abs(maxX - minX + 1)+2;
+	const height = Math.abs(maxY - minY + 1)+2;
 
 	const croppedCanvas = createCanvas(width, height);
 	const croppedCtx = croppedCanvas.getContext('2d');
@@ -110,21 +133,26 @@ export const prepareLine = (canvas: Canvas, line: { start: number, end: number }
 	const lineCanvas = new Canvas(canvas.width, lineHeight);
 	const lineCtx = lineCanvas.getContext('2d');
 	lineCtx.drawImage(canvas, 0, line.start, canvas.width, lineHeight, 0, 0, canvas.width, lineHeight);
-	pad(lineCanvas, lineCtx, 2);
-	cropToBoundingBox(lineCanvas, lineCtx, 0, vectorSize);
 	return { lineCanvas, lineCtx };
-
 }
 
-export const prepareSegment = (canvas: Canvas, segment: { start: number, end: number }, vectorSize: number) => {
+export const prepareSegment = (canvas: Canvas, segment: { start: number, end: number }, vectorSize: number ) => {
 	const segmentWidth = segment.end - segment.start;
 	const segmentCanvas = new Canvas(segmentWidth, canvas.height);
 	const segmentCtx = segmentCanvas.getContext('2d');
 	segmentCtx.drawImage(canvas, segment.start, 0, segmentWidth, canvas.height, 0, 0, segmentWidth, canvas.height);
-	// cropToBoundingBox(segmentCanvas, segmentCtx, 0, canvas.height);
-	scaleImage(segmentCanvas, segmentCtx, vectorSize, vectorSize);
-
-	return { segmentCanvas, segmentCtx };
+	// TODO: bring back scaling after training model with scaled images
+	// scaleImage(segmentCanvas, segmentCtx);
+	centerImageToVectorSize(segmentCanvas, segmentCtx);
+	const imageData = segmentCtx.getImageData(0, 0, segmentCanvas.width, segmentCanvas.height);
+	const data = imageData.data;
+    const grayscaleValues = [];
+    for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        grayscaleValues.push(r);
+    }
+    const normalizedValues = grayscaleValues.map(value => value / 255);
+    return normalizedValues;
 }
 
 export const pad = (canvas: Canvas, ctx: CanvasRenderingContext2D, padding: number) => {

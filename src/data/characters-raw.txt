@@ -69,6 +69,7 @@ fl
 ff
 ffi
 ffl
+fo
 st
 Th
 Te
@@ -77,6 +78,7 @@ Va
 Wa
 ta
 ov
+bj
 av
 aw
 rt
@@ -116,6 +118,8 @@ $
 )
 {
 }
+[
+]
 ,
 -
 .

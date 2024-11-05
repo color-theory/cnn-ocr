@@ -12,8 +12,6 @@ const ctx = canvas.getContext('2d');
 const characterData = fs.readFileSync(path.resolve(__dirname, '../data/characters-raw.txt'), 'utf8');
 const characters = characterData.split(/\r?\n/);
 
-const vectors: { character: string, pixelData: number[] }[] = [];
-
 const getFonts = () => {
   const fontsPath = path.resolve(__dirname, '../fonts');
   const files = fs.readdirSync(fontsPath);
@@ -57,7 +55,7 @@ console.log('Fonts registered. Generating reference vectors...');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       printCharacter(canvas, ctx, character, font.name, "normal", vectorSize);
       convertToGreyscale(canvas, ctx);
-      scaleImage(canvas, ctx, vectorSize, vectorSize);
+      scaleImage(canvas, ctx);
       const sanitizedCharacter = sanitizeCharacterName(character);
       const characterDir = path.resolve(__dirname, `../data/characters/${sanitizedCharacter}`);
       if (!fs.existsSync(characterDir)) {

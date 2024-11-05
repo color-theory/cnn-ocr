@@ -1,3 +1,9 @@
 dist
 node_modules
 fonts
+*.h5
+*.keras
+ocr_model
+testImages
+web_model
+label_mapping.json
