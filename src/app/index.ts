@@ -53,11 +53,11 @@ const ocr = async (imagePath: string, spellCheck: boolean) => {
 		process.stdout.write(`\r${lineResults}\n`);
         outputText += lineResults + '\n';
 	};
-	if (spellCheck) {
-		console.log("\nSending text to spellcheck server: \n");
-		outputText = quickFilter(outputText);
-		outputText = await getCorrectedText(outputText);
-	}
+	// if (spellCheck) {
+	// 	console.log("\nSending text to spellcheck server: \n");
+	// 	outputText = quickFilter(outputText);
+	// 	outputText = await getCorrectedText(outputText);
+	// }
 	console.log(outputText)
 	return outputText;
 };
