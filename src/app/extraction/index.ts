@@ -121,34 +121,49 @@ export const extractCharacterFeatures = (canvas: Canvas, ctx: CanvasRenderingCon
 	return features;
 }
 
+const getHistogramMin = (histogram: number[]) => {
+	let value = null;
+	for (let i = 0; i < histogram.length; i++) {
+		if (histogram[i] < 1 && value === null) {
+			value = i;
+			break;
+		}
+	}
+	return value ?? 0;
+}
+
+const getHistogramMax = (histogram: number[]) => {
+	let value = null;
+	for (let i = histogram.length - 1; i >= 0; i--) {
+		if (histogram[i] < 1 && value === null) {
+			value = i;
+			break;
+		}
+	}
+	return value ?? histogram.length - 1;
+}
+
 export const getBounds = (canvas: Canvas, ctx: CanvasRenderingContext2D) => {
 	const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 	const data = imageData.data;
-	let minY = null;
-	let maxY = null;
-	let minX = null;
-	let maxX = null;
+	const rowHistogram = new Array(canvas.height).fill(0);
+	const columnHistogram = new Array(canvas.width).fill(0);
 
-	for (let y = 0; y < canvas.height; y++) {
-		for (let x = 0; x < canvas.width; x++) {
+	for (let x = 0; x < canvas.width; x++) {
+		for (let y = 0; y < canvas.height; y++) {
 			const i = (y * canvas.width + x) * 4;
-
-			// Detect first non-white row (upper bound)
-			if (data[i] < 255 || data[i + 1] < 255 || data[i + 2] < 255) {
-				if (minY === null) minY = y;
-				maxY = y; // Keep updating maxY for every non-background pixel row
-				minX = minX !== null ? Math.min(minX, x) : x;
-				maxX = maxX !== null ? Math.max(maxX, x) : x;
-				break;
-			}
+			rowHistogram[y] += data[i];
+			columnHistogram[x] += data[i];
 		}
 	}
+	const maxValue = Math.max(...rowHistogram);
+	const normalizedRows = rowHistogram.map((value) => value / maxValue);
+	const normalizedColumns = columnHistogram.map((value) => value / maxValue);
 
-	// Set defaults if no foreground was found
-	minY = minY !== null ? minY : 0;
-	maxY = maxY !== null ? maxY : canvas.height;
-	minX = minX !== null ? minX : 0;
-	maxX = maxX !== null ? maxX : canvas.width;
-
-	return { minX, minY, maxX, maxY };
+	return{ 
+		minX: getHistogramMin(normalizedColumns),
+		maxX: getHistogramMax(normalizedColumns),
+		minY: getHistogramMin(normalizedRows),
+		maxY: getHistogramMax(normalizedRows)
+	};
 };

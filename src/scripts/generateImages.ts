@@ -49,13 +49,13 @@ console.log('Fonts registered. Generating reference vectors...');
     const { canvas: familyCanvas, ctx: familyCtx } = printFamily(font.name, "normal", vectorSize, characters);
     const { minY, maxY } = getBounds(familyCanvas, familyCtx);
     console.log(`Family saved as ${font.name}-family.png minY: ${minY}, maxY: ${maxY}`);
-
     for (let characterIndex = 0; characterIndex < characters.length; characterIndex++) {
       const character = characters[characterIndex];
+      console.log(`Generating image for character ${character} with font ${font.name}`);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      printCharacter(canvas, ctx, character, font.name, "normal", vectorSize);
-      convertToGreyscale(canvas, ctx);
+      printCharacter(canvas, ctx, character, font.name, "normal", minY, maxY);
       scaleImage(canvas, ctx);
+      convertToGreyscale(canvas, ctx);
       const sanitizedCharacter = sanitizeCharacterName(character);
       const characterDir = path.resolve(__dirname, `../data/characters/${sanitizedCharacter}`);
       if (!fs.existsSync(characterDir)) {
