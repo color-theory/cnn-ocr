@@ -27,7 +27,7 @@ export const printCharacter = (canvas: Canvas, ctx: CanvasRenderingContext2D, ch
 
 	ctx.fillStyle = 'rgba(0, 0, 0, 1)';
 	ctx.font = `${fontStyle} ${canvasSize * .65}px ${font}`;
-	ctx.textBaseline = "top";
+	ctx.textBaseline = "alphabetic"
 	const textWidth = ctx.measureText(character).width;
 	const x = (canvasSize - textWidth) / 2;
 	const y = 0;
@@ -63,7 +63,16 @@ export function sanitizeCharacterName(char: string): string {
 		'\\': 'backslash',
 		'_': 'underscore',
 		'`': 'backtick',
-		'|': 'pipe'
+		'|': 'pipe',
+		'~': 'tilde',
+		'[': 'left_bracket',
+		']': 'right_bracket',
+		'^': 'caret',
+		'°': 'degree',
+		'€': 'euro',
+		'£': 'pound',
+		'¥': 'yen',
+		'§': 'section'
 	};
 
 	if (char.match(/[A-Z]/)) {

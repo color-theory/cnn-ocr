@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { createCanvas, registerFont } from 'canvas';
 import { getBounds } from '../app/extraction';
-import { cropToBoundingBox, scaleImage, convertToGreyscale } from '../app/preprocess';
+import { scaleImage, convertToGreyscale } from '../app/preprocess';
 import { sanitizeCharacterName, printCharacter, printFamily } from './util';
 import { vectorSize } from '../app/config';
 

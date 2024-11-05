@@ -141,9 +141,7 @@ export const prepareSegment = (canvas: Canvas, segment: { start: number, end: nu
 	const segmentCanvas = new Canvas(segmentWidth, canvas.height);
 	const segmentCtx = segmentCanvas.getContext('2d');
 	segmentCtx.drawImage(canvas, segment.start, 0, segmentWidth, canvas.height, 0, 0, segmentWidth, canvas.height);
-	// TODO: bring back scaling after training model with scaled images
-	// scaleImage(segmentCanvas, segmentCtx);
-	centerImageToVectorSize(segmentCanvas, segmentCtx);
+	scaleImage(segmentCanvas, segmentCtx);
 	const imageData = segmentCtx.getImageData(0, 0, segmentCanvas.width, segmentCanvas.height);
 	const data = imageData.data;
     const grayscaleValues = [];
