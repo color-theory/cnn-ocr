@@ -9,12 +9,13 @@ import { getCharacterSegments, getLineSegments, getBounds } from './extraction';
 import { vectorSize } from './config';
 import { loadModel, predictCharacter } from './model';
 import { binarize } from './preprocess/otsu';
+import { getCorrectedText, quickFilter } from './postprocess';
 
 export const preprocessImage = (image: Image) => {
 	const { canvas, ctx } = createAndLoadCanvas(image);
 	convertToGreyscale(canvas, ctx);
 	invertIfDarkBackground(canvas, ctx);
-// 	binarize(canvas, ctx);
+ 	binarize(canvas, ctx);
 	return { canvas, ctx };
 };
 
@@ -25,7 +26,7 @@ const ocr = async (imagePath: string, spellCheck: boolean) => {
 	const { canvas, ctx } = preprocessImage(image);
 
 	const lines = getLineSegments(canvas, ctx);
-	console.log(`Found ${lines.length} lines. Analyzing...`);
+	console.log(`Found ${lines.length} lines. Analyzing...\n`);
     
     let outputText = '';
 	for (const line of lines) {
@@ -47,11 +48,17 @@ const ocr = async (imagePath: string, spellCheck: boolean) => {
 
 			const segmentImage = prepareSegment(lineCanvas, segment, vectorSize);
             lineResults += await predictCharacter(model, segmentImage);
+			process.stdout.write(`\r${lineResults}`);
 		};
+		process.stdout.write(`\r${lineResults}\n`);
         outputText += lineResults + '\n';
 	};
-
-	console.log(`\n\nBest guess: \n${outputText}\n`);
+	if (spellCheck) {
+		console.log("\nSending text to spellcheck server: \n");
+		outputText = quickFilter(outputText);
+		outputText = await getCorrectedText(outputText);
+	}
+	console.log(outputText)
 	return outputText;
 };
 
