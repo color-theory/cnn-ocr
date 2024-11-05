@@ -1,25 +1,28 @@
-import { createCanvas, Canvas, CanvasRenderingContext2D } from 'canvas';
-import { vectorSize } from '../app/config';
 import * as fs from 'fs';
 import * as path from 'path';
+import { createCanvas, Canvas, CanvasRenderingContext2D } from 'canvas';
+import { Font } from 'fontkit';
+import { vectorSize, fontSize } from '../app/config';
 
-export const printFamily = (font: string, fontStyle: string, vectorSize: number, characters: string[]) => {
-	const canvasSize = vectorSize;
-	const canvas = createCanvas(canvasSize, canvasSize);
+export const printFamily = (font: Font, vectorSize: number, characters: string[]) => {
+	const canvas = createCanvas(vectorSize, vectorSize);
 	const ctx = canvas.getContext('2d');
 
 	ctx.fillStyle = 'rgba(255, 255, 255, 1)';
 	ctx.fillRect(0, 0, canvas.width, canvas.height);
 	ctx.fillStyle = 'rgba(0, 0, 0, 1)';
-	ctx.font = `${fontStyle} ${canvasSize * .65}px ${font}`;
 	characters.forEach((character: string) => {
-		ctx.textBaseline = "top";
-		ctx.fillText(character, 0, 0);
+		const glyphRun = font.layout(character);
+		glyphRun.glyphs.forEach(glyph => {
+			// @ts-ignore
+			glyph.render(ctx, fontSize);
+		});
 	});
+
 	return { canvas, ctx };
 }
 
-export const printCharacter = (canvas: Canvas, ctx: CanvasRenderingContext2D, character: string, font: string, fontStyle: string, minY: number, maxY: number) => {
+export const printCharacter = (canvas: Canvas, ctx: CanvasRenderingContext2D, character: string, font: Font, minY: number, maxY: number) => {
 	canvas.width = vectorSize;
 	canvas.height = vectorSize;
 
@@ -27,20 +30,27 @@ export const printCharacter = (canvas: Canvas, ctx: CanvasRenderingContext2D, ch
 	ctx.fillRect(0, 0, canvas.width, canvas.height);
 
 	ctx.fillStyle = 'rgba(0, 0, 0, 1)';
-	ctx.font = `${fontStyle} ${vectorSize * .65}px ${font}`;
-	ctx.textBaseline = "top";
-	const textWidth = ctx.measureText(character).width;
-	const x = (canvas.width - textWidth) / 2;
-	ctx.fillText(character, x, 0);
-	fs.writeFileSync(path.resolve(__dirname, `testchar.png`), canvas.toBuffer());
-	// Crop the character to x - textWidth / 2, minY, x + textWidth / 2, maxY
-	const tempCanvas = createCanvas(textWidth, maxY - minY);
+	let advanceWidth = 0;
+	const ascent = (font.ascent / font.unitsPerEm) * fontSize;
+	const descent = (font.descent / font.unitsPerEm) * fontSize;
+	const textHeight = ascent - descent;
+
+	ctx.scale(1, -1);
+	ctx.translate(0, -ascent);
+	font.layout(character).glyphs.forEach(glyph=>{
+		ctx.translate(advanceWidth, 0);
+		// @ts-ignore
+		glyph.render(ctx, fontSize)
+		advanceWidth += ((glyph.advanceWidth / font.unitsPerEm) * fontSize);
+	})
+	const tempCanvas = createCanvas(advanceWidth, textHeight);
 	const tempCtx = tempCanvas.getContext('2d');
 	tempCtx.fillStyle = 'rgba(255, 255, 255, 1)';
 	tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-	tempCtx.drawImage(canvas, x, minY, textWidth, maxY - minY, 0, 0, textWidth, maxY - minY);
-	canvas.width = textWidth;
-	canvas.height = maxY - minY;
+	tempCtx.drawImage(canvas, 0, 0);
+	//fs.writeFileSync(path.resolve(__dirname, `testchar.png`), tempCanvas.toBuffer());
+	canvas.width = advanceWidth;
+	canvas.height = textHeight;
 	ctx.drawImage(tempCanvas, 0, 0);
 
 }

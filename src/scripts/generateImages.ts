@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { openSync, Font} from 'fontkit';
 import { createCanvas, registerFont } from 'canvas';
 import { getBounds } from '../app/extraction';
 import { scaleImage, convertToGreyscale } from '../app/preprocess';
@@ -16,15 +17,13 @@ const getFonts = () => {
   const fontsPath = path.resolve(__dirname, '../fonts');
   const files = fs.readdirSync(fontsPath);
   const ttfFiles = files.filter(file => path.extname(file).toLowerCase() === '.ttf');
-  const result = ttfFiles.map(file => ({ name: file.slice(0, -4), path: path.join(fontsPath, file) }));
+  const result = ttfFiles.map((file) => {
+    const font: Font = openSync(path.join(fontsPath, file)) as Font;
+    return font;
+  });
   return result;
 }
 
-const registerFonts = async (fonts: { name: string, path: string }[]) => {
-  fonts.forEach((font) => {
-    registerFont(font.path, { family: font.name });
-  });
-}
 
 function writeImageFile(canvas: any, filePath: string): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -39,21 +38,31 @@ function writeImageFile(canvas: any, filePath: string): Promise<void> {
 }
 
 const fonts = getFonts();
-console.log(`Found ${fonts.length} fonts. Registering fonts...`);
-registerFonts(fonts);
-console.log('Fonts registered. Generating reference vectors...');
-
+console.log(`Found ${fonts.length} fonts.`);
 (async () => {
   for (let fontIndex = 0; fontIndex < fonts.length; fontIndex++) {
     const font = fonts[fontIndex];
-    const { canvas: familyCanvas, ctx: familyCtx } = printFamily(font.name, "normal", vectorSize, characters);
+    console.log(`loading font ${font.familyName}`);
+    const { canvas: familyCanvas, ctx: familyCtx } = printFamily(font, vectorSize, characters);
     const { minY, maxY } = getBounds(familyCanvas, familyCtx);
-    console.log(`Family saved as ${font.name}-family.png minY: ${minY}, maxY: ${maxY}`);
+    console.log(`Family measured as ${font.familyName}-family.png minY: ${minY}, maxY: ${maxY}`);
     for (let characterIndex = 0; characterIndex < characters.length; characterIndex++) {
       const character = characters[characterIndex];
-      console.log(`Generating image for character ${character} with font ${font.name}`);
+      
+      let skip = false;
+      for(let i = 0; i < character.length; i++ ){
+        if(!font.hasGlyphForCodePoint(character.charCodeAt(i))){
+          console.log(` --- Glyph does not exist in this font. Skipping character ${character}.`);
+          skip = true;
+          break;
+        }
+      }
+      if(skip) continue;
+      
+      console.log(`Generating image for character ${character} with font ${font.familyName}`);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      printCharacter(canvas, ctx, character, font.name, "normal", minY, maxY);
+      console.log(`registering font ${font.familyName} as font ${font.familyName}`);
+      printCharacter(canvas, ctx, character, font, minY, maxY);
       scaleImage(canvas, ctx);
       convertToGreyscale(canvas, ctx);
       const sanitizedCharacter = sanitizeCharacterName(character);
