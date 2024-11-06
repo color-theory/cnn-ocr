@@ -4,7 +4,7 @@
   "description": "OCR upgrade to use CNN",
   "main": "index.js",
   "scripts": {
-    "build": "tsc && npm run copy-data",
+    "build": "npx rimraf dist && tsc && npm run copy-data",
     "generate-images": "npm run build && node ./dist/scripts/generateImages.js",
     "copy-data": "copyfiles -u 1 src/data/* dist/ && copyfiles -u 1 src/fonts/* dist/",
     "ocr": "npm run build && node ./dist/index.js"

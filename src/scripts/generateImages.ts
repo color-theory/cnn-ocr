@@ -6,6 +6,7 @@ import { getBounds } from '../app/extraction';
 import { scaleImage, convertToGreyscale } from '../app/preprocess';
 import { sanitizeCharacterName, printCharacter, printFamily } from './util';
 import { vectorSize } from '../app/config';
+import { binarize } from '../app/preprocess/otsu';
 
 const canvas = createCanvas(vectorSize, vectorSize);
 const ctx = canvas.getContext('2d');
@@ -65,6 +66,7 @@ console.log(`Found ${fonts.length} fonts.`);
       printCharacter(canvas, ctx, character, font, minY, maxY);
       scaleImage(canvas, ctx);
       convertToGreyscale(canvas, ctx);
+      binarize(canvas,ctx);
       const sanitizedCharacter = sanitizeCharacterName(character);
       const characterDir = path.resolve(__dirname, `../data/characters/${sanitizedCharacter}`);
       if (!fs.existsSync(characterDir)) {

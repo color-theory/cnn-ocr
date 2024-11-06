@@ -4,12 +4,12 @@
  * @returns The text extracted from the image
  */
 import { loadImage, Image } from 'canvas';
-import { createAndLoadCanvas, convertToGreyscale, cropToBoundingBox, prepareLine, prepareSegment, pad, invertIfDarkBackground } from './preprocess';
-import { getCharacterSegments, getLineSegments, getBounds } from './extraction';
+import { createAndLoadCanvas, convertToGreyscale, prepareLine, prepareSegment, pad, invertIfDarkBackground } from './preprocess';
+import { getCharacterSegments, getLineSegments } from './extraction';
 import { vectorSize } from './config';
 import { loadModel, predictCharacter } from './model';
 import { binarize } from './preprocess/otsu';
-import { getCorrectedText, quickFilter } from './postprocess';
+import * as fs from 'fs';
 
 export const preprocessImage = (image: Image) => {
 	const { canvas, ctx } = createAndLoadCanvas(image);
@@ -29,7 +29,7 @@ const ocr = async (imagePath: string, spellCheck: boolean) => {
 	console.log(`Found ${lines.length} lines. Analyzing...\n`);
     
     let outputText = '';
-	for (const line of lines) {
+	for (const [lineIndex, line] of lines.entries()) {
 		const { lineCanvas, lineCtx } = prepareLine(canvas, line, vectorSize);
 		const segments = getCharacterSegments(lineCanvas, lineCtx);
 
@@ -46,7 +46,8 @@ const ocr = async (imagePath: string, spellCheck: boolean) => {
 				continue;
 			}
 
-			const segmentImage = prepareSegment(lineCanvas, segment, vectorSize);
+			const segmentImage = prepareSegment(lineCanvas, segment, vectorSize, `${lineIndex}_${segmentIndex}`);
+			
             lineResults += await predictCharacter(model, segmentImage);
 			process.stdout.write(`\r${lineResults}`);
 		};
@@ -58,7 +59,6 @@ const ocr = async (imagePath: string, spellCheck: boolean) => {
 	// 	outputText = quickFilter(outputText);
 	// 	outputText = await getCorrectedText(outputText);
 	// }
-	console.log(outputText)
 	return outputText;
 };
 

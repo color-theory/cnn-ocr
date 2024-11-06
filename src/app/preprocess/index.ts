@@ -60,11 +60,12 @@ export const scaleImage = (canvas: Canvas, ctx: CanvasRenderingContext2D) => {
     const originalHeight = canvas.height;
     const aspectRatio = originalWidth / originalHeight;
 
-	let width = vectorSize;
-    let height = vectorSize / aspectRatio;
-    if (height > vectorSize) {
-        height = vectorSize;
-        width = vectorSize * aspectRatio;
+	const modifiedVectorSize = vectorSize - 8;
+	let width = modifiedVectorSize;
+    let height = modifiedVectorSize / aspectRatio;
+    if (height > modifiedVectorSize) {
+        height = modifiedVectorSize;
+        width = modifiedVectorSize * aspectRatio;
     }
 
     const tempCanvas = createCanvas(width, height);
@@ -78,7 +79,7 @@ export const scaleImage = (canvas: Canvas, ctx: CanvasRenderingContext2D) => {
 	ctx.fillRect(0, 0, canvas.width, canvas.height);
 
 	const x = (vectorSize - width) / 2;
-	ctx.drawImage(tempCanvas, x, 0);
+	ctx.drawImage(tempCanvas, x, (vectorSize - modifiedVectorSize) /2);
 };
 export const centerImageToVectorSize = (canvas: Canvas, ctx: CanvasRenderingContext2D) => {
 	const originalWidth = canvas.width;
@@ -136,12 +137,14 @@ export const prepareLine = (canvas: Canvas, line: { start: number, end: number }
 	return { lineCanvas, lineCtx };
 }
 
-export const prepareSegment = (canvas: Canvas, segment: { start: number, end: number }, vectorSize: number ) => {
+export const prepareSegment = (canvas: Canvas, segment: { start: number, end: number }, vectorSize: number, index: string ) => {
 	const segmentWidth = segment.end - segment.start;
 	const segmentCanvas = new Canvas(segmentWidth, canvas.height);
 	const segmentCtx = segmentCanvas.getContext('2d');
 	segmentCtx.drawImage(canvas, segment.start, 0, segmentWidth, canvas.height, 0, 0, segmentWidth, canvas.height);
 	scaleImage(segmentCanvas, segmentCtx);
+	centerImageToVectorSize(segmentCanvas, segmentCtx);
+	fs.writeFileSync(`./segments/segment${index}.png`, segmentCanvas.toBuffer());
 	const imageData = segmentCtx.getImageData(0, 0, segmentCanvas.width, segmentCanvas.height);
 	const data = imageData.data;
     const grayscaleValues = [];
