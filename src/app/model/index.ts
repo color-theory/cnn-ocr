@@ -1,23 +1,10 @@
-import * as tf from '@tensorflow/tfjs';
-import * as path from 'path';
+export const predictCharacters = async (images: any[]) => {
+    const response = await fetch('http://localhost:5000/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ images }),
+    });
 
-const labelMap = require(path.resolve(__dirname,'../../data/label_mapping.json'));
-
-export const loadModel = async () => {
-    try {
-        const model = await tf.loadGraphModel('http://localhost:8000/model.json');
-        console.log('Model loaded successfully');
-        return model;
-    } catch (error) {
-        console.error(error);
-        console.log('Error loading the model.');
-    }
+    const data = await response.json();
+    return data.prediction;
 };
-
-export const predictCharacter = async (model: any, image: any) => {
-    const inputTensor = tf.tensor4d(image, [1, 50, 50, 1]);
-    const prediction = model.predict(inputTensor);
-    const predictionData = await prediction.array();
-    const predictedIndex = predictionData[0].indexOf(Math.max(...predictionData[0]));
-    return labelMap[predictedIndex];
-}

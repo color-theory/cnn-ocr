@@ -4,12 +4,22 @@
  * @returns The text extracted from the image
  */
 import { loadImage, Image } from 'canvas';
-import { createAndLoadCanvas, convertToGreyscale, prepareLine, prepareSegment, pad, invertIfDarkBackground } from './preprocess';
+import { createAndLoadCanvas, convertToGreyscale, prepareLine, prepareSegment, invertIfDarkBackground } from './preprocess';
 import { getCharacterSegments, getLineSegments } from './extraction';
 import { vectorSize } from './config';
-import { loadModel, predictCharacter } from './model';
+import { predictCharacters } from './model';
 import { binarize } from './preprocess/otsu';
-import * as fs from 'fs';
+
+function insertSpaces(prediction: string, wordBoundaries: number[]) {
+    let result = '';
+    for (let i = 0; i < prediction.length; i++) {
+        result += prediction[i];
+        if (wordBoundaries.includes(i)) {
+            result += ' ';
+        }
+    }
+    return result;
+}
 
 export const preprocessImage = (image: Image) => {
 	const { canvas, ctx } = createAndLoadCanvas(image);
@@ -20,8 +30,6 @@ export const preprocessImage = (image: Image) => {
 };
 
 const ocr = async (imagePath: string, spellCheck: boolean) => {
-    const model = await loadModel();
-	
     const image = await loadImage(imagePath);
 	const { canvas, ctx } = preprocessImage(image);
 
@@ -29,30 +37,34 @@ const ocr = async (imagePath: string, spellCheck: boolean) => {
 	console.log(`Found ${lines.length} lines. Analyzing...\n`);
     
     let outputText = '';
-	for (const [lineIndex, line] of lines.entries()) {
+	for (const line of lines) {
 		const { lineCanvas, lineCtx } = prepareLine(canvas, line, vectorSize);
 		const segments = getCharacterSegments(lineCanvas, lineCtx);
 
 		let segmentIndex = 0;
 		let lineResults = "";
 
+		let imagestoPredict = [];
+		let spaceLocations = [];
 		for (const segment of segments) {
-			segmentIndex++;
 			if (segment.type == 'space') {
-				lineResults += ' ';
+				spaceLocations.push(segmentIndex-1);
 				continue;
 			};
 			if (segment.type == 'gap') {
 				continue;
 			}
-
-			const segmentImage = prepareSegment(lineCanvas, segment, vectorSize, `${lineIndex}_${segmentIndex}`);
+			segmentIndex++;
+			const segmentImage = prepareSegment(lineCanvas, segment);
 			
-            lineResults += await predictCharacter(model, segmentImage);
-			process.stdout.write(`\r${lineResults}`);
+            imagestoPredict.push(segmentImage);
+			
 		};
-		process.stdout.write(`\r${lineResults}\n`);
-        outputText += lineResults + '\n';
+		lineResults += await predictCharacters(imagestoPredict) + "\n";
+			
+		const spacedLines = insertSpaces(lineResults, spaceLocations);
+		outputText += spacedLines;
+		process.stdout.write(spacedLines);
 	};
 	// if (spellCheck) {
 	// 	console.log("\nSending text to spellcheck server: \n");

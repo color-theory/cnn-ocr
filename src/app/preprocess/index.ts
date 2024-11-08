@@ -1,7 +1,5 @@
 import { createCanvas, Image, Canvas, CanvasRenderingContext2D } from 'canvas';
-import { binarize } from './otsu';
 import { vectorSize } from '../config';
-import * as fs from 'fs';
 
 export const createAndLoadCanvas = (image: Image) => {
 	const canvas = createCanvas(image.width, image.height);
@@ -137,14 +135,13 @@ export const prepareLine = (canvas: Canvas, line: { start: number, end: number }
 	return { lineCanvas, lineCtx };
 }
 
-export const prepareSegment = (canvas: Canvas, segment: { start: number, end: number }, vectorSize: number, index: string ) => {
+export const prepareSegment = (canvas: Canvas, segment: { start: number, end: number }) => {
 	const segmentWidth = segment.end - segment.start;
 	const segmentCanvas = new Canvas(segmentWidth, canvas.height);
 	const segmentCtx = segmentCanvas.getContext('2d');
 	segmentCtx.drawImage(canvas, segment.start, 0, segmentWidth, canvas.height, 0, 0, segmentWidth, canvas.height);
 	scaleImage(segmentCanvas, segmentCtx);
 	centerImageToVectorSize(segmentCanvas, segmentCtx);
-	fs.writeFileSync(`./segments/segment${index}.png`, segmentCanvas.toBuffer());
 	const imageData = segmentCtx.getImageData(0, 0, segmentCanvas.width, segmentCanvas.height);
 	const data = imageData.data;
     const grayscaleValues = [];
