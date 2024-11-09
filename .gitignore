@@ -8,3 +8,4 @@ testImages
 web_model
 label_mapping.json
 segments
+lines
